@@ -255,8 +255,9 @@ fun ImeSetupScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    var testText by remember { mutableStateOf("") }
 
-    // Auto refresh status whenever user returns to this screen (e.g., from system settings or keyboard selector)
+    // Auto refresh status whenever user returns to this screen
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
@@ -274,30 +275,15 @@ fun ImeSetupScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Hero Section
-        HeroSection(
-            isImeEnabled = isImeEnabled,
-            isImeSelected = isImeSelected
-        )
-
-        // Setup Steps Section Header
-        Text(
-            text = "Trạng thái & Hướng dẫn kích hoạt",
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        )
-
         // Step 1: Enable Input Method
         SetupStepCard(
             stepNumber = "1",
             title = "Bật Bàn phím trong Cài đặt",
-            description = "Cho phép 'Bàn Phím Tiếng Việt' hoạt động làm dịch vụ nhập liệu trên thiết bị Android.",
+            description = "Cho phép 'Bàn Phím Tiếng Việt' làm dịch vụ nhập liệu hệ thống.",
             isCompleted = isImeEnabled,
-            statusText = if (isImeEnabled) "Đã bật trong Cài đặt" else "Chưa kích hoạt",
+            statusText = if (isImeEnabled) "Đã bật" else "Chưa kích hoạt",
             buttonText = if (isImeEnabled) "Mở Cài đặt hệ thống" else "Kích hoạt ngay",
             onAction = {
                 context.startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
@@ -308,82 +294,71 @@ fun ImeSetupScreen(
         SetupStepCard(
             stepNumber = "2",
             title = "Chọn làm Bàn phím Mặc định",
-            description = "Đặt 'Bàn Phím Tiếng Việt' làm phương thức nhập liệu chính để gõ trong mọi ứng dụng.",
+            description = "Đặt 'Bàn Phím Tiếng Việt' làm phương thức nhập liệu chính.",
             isCompleted = isImeSelected,
-            statusText = if (isImeSelected) "Đã đặt làm mặc định" else "Chưa chọn làm mặc định",
+            statusText = if (isImeSelected) "Đã chọn làm mặc định" else "Chưa chọn làm mặc định",
             buttonText = if (isImeSelected) "Thay đổi bàn phím" else "Chọn làm mặc định",
             onAction = {
                 val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 imm.showInputMethodPicker()
             }
         )
-    }
-}
 
-@Composable
-fun HeroSection(
-    isImeEnabled: Boolean,
-    isImeSelected: Boolean
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        // Manual Refresh Button
+        OutlinedButton(
+            onClick = onRefreshStatus,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
         ) {
-            // Status Tag Pill
-            val isFullyActive = isImeEnabled && isImeSelected
-            val statusBg = if (isFullyActive) Color(0xFF10B981).copy(alpha = 0.15f) else Color(0xFFF59E0B).copy(alpha = 0.15f)
-            val statusColor = if (isFullyActive) Color(0xFF10B981) else Color(0xFFD97706)
-            val statusText = when {
-                isFullyActive -> "Sẵn sàng gõ trên toàn hệ thống"
-                isImeEnabled -> "Cần chọn làm bàn phím mặc định (Bước 2)"
-                else -> "Chưa bật trong Cài đặt hệ thống (Bước 1)"
-            }
+            Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Kiểm tra & Cập nhật trạng thái", style = MaterialTheme.typography.labelLarge)
+        }
 
-            Surface(
-                color = statusBg,
-                shape = RoundedCornerShape(20.dp)
+        // Live Typing Test Card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(statusColor)
+                    Icon(
+                        Icons.Outlined.EditNote,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = statusText,
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            color = statusColor,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        text = "Thử nghiệm bàn phím hệ thống",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }
+
+                OutlinedTextField(
+                    value = testText,
+                    onValueChange = { testText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Nhập nội dung thử...") },
+                    placeholder = { Text("Bấm vào đây để mở bàn phím gõ thử...") },
+                    shape = RoundedCornerShape(10.dp),
+                    trailingIcon = {
+                        if (testText.isNotEmpty()) {
+                            IconButton(onClick = { testText = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Xóa", modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                )
             }
-
-            Text(
-                text = "Bộ gõ Tiếng Việt Telex & VNI",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            )
-
-            Text(
-                text = "Tích hợp JNI Rust Engine phản hồi tức thì với độ trễ siêu thấp. Thiết kế tối giản, tinh tế chuẩn thương mại.",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
         }
     }
 }
@@ -876,19 +851,32 @@ private fun checkImeStatus(
     onResult: (Boolean, Boolean) -> Unit
 ) {
     try {
-        val enabledMethods = Settings.Secure.getString(
+        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val packageName = context.packageName
+
+        // Check enabled IME
+        val enabledList = imm.enabledInputMethodList
+        var isEnabled = enabledList.any { it.packageName == packageName }
+
+        val enabledMethodsSetting = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.ENABLED_INPUT_METHODS
         ) ?: ""
 
-        val defaultMethod = Settings.Secure.getString(
+        if (!isEnabled && (enabledMethodsSetting.contains(packageName) || enabledMethodsSetting.contains("VietnameseIME"))) {
+            isEnabled = true
+        }
+
+        // Check default selected IME
+        val defaultMethodSetting = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.DEFAULT_INPUT_METHOD
         ) ?: ""
 
-        val packageName = context.packageName
-        val isEnabled = enabledMethods.contains(packageName)
-        val isSelected = defaultMethod.contains(packageName)
+        val isSelected = isEnabled && (
+            defaultMethodSetting.contains(packageName) ||
+            defaultMethodSetting.contains("VietnameseIME")
+        )
 
         onResult(isEnabled, isSelected)
     } catch (e: Exception) {

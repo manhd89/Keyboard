@@ -279,7 +279,7 @@ class KeyboardView @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val desiredHeight = (230 * resources.displayMetrics.density).toInt()
+        val desiredHeight = (260 * resources.displayMetrics.density).toInt()
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
         val width = if (widthSize > 0) widthSize else resources.displayMetrics.widthPixels
 
@@ -304,17 +304,17 @@ class KeyboardView @JvmOverloads constructor(
         keyRows.clear()
 
         val availableHeight = totalHeight.toFloat()
-        val rowCount = 4
-        val rowHeight = availableHeight / rowCount
-        val keyMarginHorizontal = 3.5f * resources.displayMetrics.density
-        val keyMarginVertical = 4f * resources.displayMetrics.density
-
         val rawRows = when (keyboardMode) {
             KeyboardMode.LOWERCASE -> getQwertyRows(uppercase = false)
             KeyboardMode.UPPERCASE, KeyboardMode.CAPS_LOCK -> getQwertyRows(uppercase = true)
             KeyboardMode.NUMBERS -> getNumberRows()
             KeyboardMode.SYMBOLS -> getSymbolRows()
         }
+
+        val rowCount = rawRows.size
+        val rowHeight = availableHeight / rowCount
+        val keyMarginHorizontal = 3.5f * resources.displayMetrics.density
+        val keyMarginVertical = 3.5f * resources.displayMetrics.density
 
         var currentY = 0f
 
@@ -339,6 +339,10 @@ class KeyboardView @JvmOverloads constructor(
     }
 
     private fun getQwertyRows(uppercase: Boolean): List<List<Key>> {
+        val r0 = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0").map {
+            Key(it[0].code, it)
+        }
+
         val r1 = listOf("q", "w", "e", "r", "t", "y", "u", "i", "o", "p").map {
             val label = if (uppercase) it.uppercase() else it
             Key(label[0].code, label)
@@ -373,7 +377,7 @@ class KeyboardView @JvmOverloads constructor(
             Key(10, "Nhập ↵", KeyType.ENTER, weight = 1.5f)
         )
 
-        return listOf(r1, r2, r3, r4)
+        return listOf(r0, r1, r2, r3, r4)
     }
 
     private fun getNumberRows(): List<List<Key>> {
