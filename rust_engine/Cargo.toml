@@ -1,0 +1,11 @@
+[package]
+name = "vi_engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+vi = "0.1"
+jni = "0.21"

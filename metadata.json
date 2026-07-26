@@ -1,0 +1,6 @@
+{
+  "name": "Bàn Phím Tiếng Việt",
+  "description": "Ứng dụng bàn phím gõ tiếng Việt Telex/VNI với engine Rust JNI và Canvas Keyboard View",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
