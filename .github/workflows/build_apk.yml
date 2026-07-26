@@ -33,15 +33,17 @@ jobs:
 
       - name: Set up Android NDK
         run: |
-          if [ -d "$ANDROID_NDK_LATEST_HOME" ]; then
-            echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> $GITHUB_ENV
-            echo "Using pre-installed NDK at $ANDROID_NDK_LATEST_HOME"
+          if [ -n "$ANDROID_NDK_LATEST_HOME" ] && [ -d "$ANDROID_NDK_LATEST_HOME" ]; then
+            NDK_PATH="$ANDROID_NDK_LATEST_HOME"
+          elif [ -n "$ANDROID_NDK_HOME" ] && [ -d "$ANDROID_NDK_HOME" ]; then
+            NDK_PATH="$ANDROID_NDK_HOME"
           else
             echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;26.1.10909125"
             NDK_PATH=$(ls -d $ANDROID_HOME/ndk/* 2>/dev/null | tail -n 1)
-            echo "ANDROID_NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
-            echo "Installed NDK at $NDK_PATH"
           fi
+          echo "ANDROID_NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$NDK_PATH" >> $GITHUB_ENV
+          echo "Using NDK at $NDK_PATH"
 
       - name: Build Rust vi_engine library for Android targets
         run: |

@@ -1,4 +1,4 @@
-use vi::methods::{transform_buffer, TELEX, VNI};
+use vi::{transform_buffer, TELEX, VNI};
 use jni::objects::{JClass, JString};
 use jni::sys::{jint, jstring};
 use jni::JNIEnv;
