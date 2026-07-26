@@ -12,27 +12,37 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Teal500,
-    secondary = Emerald500,
-    tertiary = Amber500,
-    background = DarkBackground,
-    surface = DarkSurface,
-    onPrimary = Color.White,
+    primary = BrandPrimaryDark,
+    onPrimary = Color(0xFF09090B),
+    primaryContainer = NeutralDarkSurfaceElevated,
+    onPrimaryContainer = NeutralDarkTextPrimary,
+    secondary = NeutralDarkTextSecondary,
     onSecondary = Color.White,
-    onBackground = Slate100,
-    onSurface = Slate100
+    background = NeutralDarkBackground,
+    onBackground = NeutralDarkTextPrimary,
+    surface = NeutralDarkSurface,
+    onSurface = NeutralDarkTextPrimary,
+    surfaceVariant = NeutralDarkSurfaceElevated,
+    onSurfaceVariant = NeutralDarkTextSecondary,
+    outline = NeutralDarkBorder,
+    outlineVariant = Color(0xFF333740)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Teal600,
-    secondary = Emerald700,
-    tertiary = Amber500,
-    background = Slate100,
-    surface = LightSurface,
+    primary = BrandAccentLight,
     onPrimary = Color.White,
+    primaryContainer = NeutralLightSurfaceElevated,
+    onPrimaryContainer = NeutralLightTextPrimary,
+    secondary = NeutralLightTextSecondary,
     onSecondary = Color.White,
-    onBackground = Slate900,
-    onSurface = Slate900
+    background = NeutralLightBackground,
+    onBackground = NeutralLightTextPrimary,
+    surface = NeutralLightSurface,
+    onSurface = NeutralLightTextPrimary,
+    surfaceVariant = NeutralLightSurfaceElevated,
+    onSurfaceVariant = NeutralLightTextSecondary,
+    outline = NeutralLightBorder,
+    outlineVariant = Color(0xFFD4D4D8)
 )
 
 @Composable
@@ -56,4 +66,3 @@ fun MyApplicationTheme(
         content = content
     )
 }
-

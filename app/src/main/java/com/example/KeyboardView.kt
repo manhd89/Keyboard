@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.Handler
@@ -15,13 +14,12 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import com.example.viengines.ViEngine
-import kotlin.math.max
-import kotlin.math.min
 
 /**
  * Custom Keyboard View rendered ENTIRELY using Android Canvas & View.
- * Implements high-performance custom key layouts, touch handling, key popups,
- * visual feedback, and mode/method switching (Telex/VNI).
+ * Designed with a modern, high-end commercial aesthetic (Apple / Linear / Raycast / Notion style).
+ * Features precise touch target calculations, subtle key elevation strokes, haptic feedback,
+ * and high-performance Telex & VNI input handling.
  */
 class KeyboardView @JvmOverloads constructor(
     context: Context,
@@ -61,70 +59,84 @@ class KeyboardView @JvmOverloads constructor(
         val backgroundColor: Int,
         val candidateBarBg: Int,
         val keyBgColor: Int,
+        val keyBorderColor: Int,
         val keySpecialBgColor: Int,
         val keyPressedColor: Int,
         val textColor: Int,
         val textSpecialColor: Int,
         val accentColor: Int,
+        val accentTextColor: Int,
         val popupBgColor: Int,
         val popupTextColor: Int,
-        val keyCornerRadiusDp: Float = 6f
+        val keyCornerRadiusDp: Float = 7f
     ) {
         companion object {
+            // Linear Dark Minimal Theme
             val DARK_SLATE = KeyboardTheme(
                 name = "Dark Slate",
-                backgroundColor = Color.parseColor("#0F172A"),
-                candidateBarBg = Color.parseColor("#1E293B"),
-                keyBgColor = Color.parseColor("#334155"),
-                keySpecialBgColor = Color.parseColor("#1E293B"),
-                keyPressedColor = Color.parseColor("#475569"),
-                textColor = Color.parseColor("#F8FAFC"),
+                backgroundColor = Color.parseColor("#121316"),
+                candidateBarBg = Color.parseColor("#181A1F"),
+                keyBgColor = Color.parseColor("#22252C"),
+                keyBorderColor = Color.parseColor("#2C3038"),
+                keySpecialBgColor = Color.parseColor("#1B1D23"),
+                keyPressedColor = Color.parseColor("#323742"),
+                textColor = Color.parseColor("#F1F5F9"),
                 textSpecialColor = Color.parseColor("#94A3B8"),
-                accentColor = Color.parseColor("#0D9488"),
-                popupBgColor = Color.parseColor("#0F766E"),
+                accentColor = Color.parseColor("#38BDF8"),
+                accentTextColor = Color.parseColor("#090D16"),
+                popupBgColor = Color.parseColor("#2A2E38"),
                 popupTextColor = Color.parseColor("#FFFFFF")
             )
 
-            val EMERALD_LIGHT = KeyboardTheme(
-                name = "Emerald Light",
-                backgroundColor = Color.parseColor("#F1F5F9"),
-                candidateBarBg = Color.parseColor("#E2E8F0"),
+            // Apple iOS Light Minimal Theme
+            val APPLE_LIGHT = KeyboardTheme(
+                name = "Apple Light",
+                backgroundColor = Color.parseColor("#D1D5DB"),
+                candidateBarBg = Color.parseColor("#E5E7EB"),
                 keyBgColor = Color.parseColor("#FFFFFF"),
-                keySpecialBgColor = Color.parseColor("#CBD5E1"),
-                keyPressedColor = Color.parseColor("#94A3B8"),
-                textColor = Color.parseColor("#0F172A"),
-                textSpecialColor = Color.parseColor("#334155"),
-                accentColor = Color.parseColor("#059669"),
-                popupBgColor = Color.parseColor("#047857"),
+                keyBorderColor = Color.parseColor("#E5E7EB"),
+                keySpecialBgColor = Color.parseColor("#BFC5CE"),
+                keyPressedColor = Color.parseColor("#D1D5DB"),
+                textColor = Color.parseColor("#111827"),
+                textSpecialColor = Color.parseColor("#374151"),
+                accentColor = Color.parseColor("#2563EB"),
+                accentTextColor = Color.parseColor("#FFFFFF"),
+                popupBgColor = Color.parseColor("#FFFFFF"),
+                popupTextColor = Color.parseColor("#111827")
+            )
+
+            // Raycast Charcoal Mono Dark Theme
+            val CHARCOAL_MONO = KeyboardTheme(
+                name = "Charcoal Mono",
+                backgroundColor = Color.parseColor("#090A0C"),
+                candidateBarBg = Color.parseColor("#111215"),
+                keyBgColor = Color.parseColor("#1A1C20"),
+                keyBorderColor = Color.parseColor("#262930"),
+                keySpecialBgColor = Color.parseColor("#131417"),
+                keyPressedColor = Color.parseColor("#2E323A"),
+                textColor = Color.parseColor("#F8FAFC"),
+                textSpecialColor = Color.parseColor("#A1A1AA"),
+                accentColor = Color.parseColor("#F8FAFC"),
+                accentTextColor = Color.parseColor("#090A0C"),
+                popupBgColor = Color.parseColor("#22252B"),
                 popupTextColor = Color.parseColor("#FFFFFF")
             )
 
-            val CYBER_NEON = KeyboardTheme(
-                name = "Cyber Neon",
-                backgroundColor = Color.parseColor("#090D16"),
-                candidateBarBg = Color.parseColor("#121829"),
-                keyBgColor = Color.parseColor("#1A2238"),
-                keySpecialBgColor = Color.parseColor("#121829"),
-                keyPressedColor = Color.parseColor("#253354"),
-                textColor = Color.parseColor("#00F0FF"),
-                textSpecialColor = Color.parseColor("#FF007A"),
-                accentColor = Color.parseColor("#00F0FF"),
-                popupBgColor = Color.parseColor("#FF007A"),
-                popupTextColor = Color.parseColor("#FFFFFF")
-            )
-
-            val SUNSET_WARM = KeyboardTheme(
-                name = "Sunset Warm",
-                backgroundColor = Color.parseColor("#1C1917"),
-                candidateBarBg = Color.parseColor("#292524"),
-                keyBgColor = Color.parseColor("#44403C"),
-                keySpecialBgColor = Color.parseColor("#292524"),
-                keyPressedColor = Color.parseColor("#78716C"),
-                textColor = Color.parseColor("#FFEDD5"),
-                textSpecialColor = Color.parseColor("#F97316"),
-                accentColor = Color.parseColor("#EA580C"),
-                popupBgColor = Color.parseColor("#C2410C"),
-                popupTextColor = Color.parseColor("#FFFFFF")
+            // Notion Warm Cream Theme
+            val WARM_CANVAS = KeyboardTheme(
+                name = "Warm Canvas",
+                backgroundColor = Color.parseColor("#F5F4F0"),
+                candidateBarBg = Color.parseColor("#EBE9E3"),
+                keyBgColor = Color.parseColor("#FFFFFF"),
+                keyBorderColor = Color.parseColor("#E3E1D9"),
+                keySpecialBgColor = Color.parseColor("#E6E4DD"),
+                keyPressedColor = Color.parseColor("#D8D5CC"),
+                textColor = Color.parseColor("#292524"),
+                textSpecialColor = Color.parseColor("#57534E"),
+                accentColor = Color.parseColor("#44403C"),
+                accentTextColor = Color.parseColor("#FAFAF9"),
+                popupBgColor = Color.parseColor("#292524"),
+                popupTextColor = Color.parseColor("#FAFAF9")
             )
         }
     }
@@ -171,7 +183,6 @@ class KeyboardView @JvmOverloads constructor(
 
     // Touched key tracking
     private var activePressedKey: Key? = null
-    private var pressedKeyRect: RectF? = null
 
     // Backspace auto-repeat
     private val handler = Handler(Looper.getMainLooper())
@@ -193,15 +204,17 @@ class KeyboardView @JvmOverloads constructor(
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val candidateBgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val keyBgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val keyBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val keySpecialBgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val keyPressedBgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val keyTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val keySpecialTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val accentPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val accentTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val popupBgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val popupTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val candidateTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val borderLinePaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
 
@@ -219,6 +232,10 @@ class KeyboardView @JvmOverloads constructor(
         keyBgPaint.color = theme.keyBgColor
         keyBgPaint.style = Paint.Style.FILL
 
+        keyBorderPaint.color = theme.keyBorderColor
+        keyBorderPaint.style = Paint.Style.STROKE
+        keyBorderPaint.strokeWidth = 1f * resources.displayMetrics.density
+
         keySpecialBgPaint.color = theme.keySpecialBgColor
         keySpecialBgPaint.style = Paint.Style.FILL
 
@@ -228,15 +245,20 @@ class KeyboardView @JvmOverloads constructor(
         keyTextPaint.color = theme.textColor
         keyTextPaint.style = Paint.Style.FILL
         keyTextPaint.textAlign = Paint.Align.CENTER
-        keyTextPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        keyTextPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
 
         keySpecialTextPaint.color = theme.textSpecialColor
         keySpecialTextPaint.style = Paint.Style.FILL
         keySpecialTextPaint.textAlign = Paint.Align.CENTER
-        keySpecialTextPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        keySpecialTextPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
 
         accentPaint.color = theme.accentColor
         accentPaint.style = Paint.Style.FILL
+
+        accentTextPaint.color = theme.accentTextColor
+        accentTextPaint.style = Paint.Style.FILL
+        accentTextPaint.textAlign = Paint.Align.CENTER
+        accentTextPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
 
         popupBgPaint.color = theme.popupBgColor
         popupBgPaint.style = Paint.Style.FILL
@@ -244,23 +266,21 @@ class KeyboardView @JvmOverloads constructor(
         popupTextPaint.color = theme.popupTextColor
         popupTextPaint.style = Paint.Style.FILL
         popupTextPaint.textAlign = Paint.Align.CENTER
-        popupTextPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        popupTextPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
 
         candidateTextPaint.color = theme.textColor
         candidateTextPaint.style = Paint.Style.FILL
         candidateTextPaint.textAlign = Paint.Align.LEFT
-        candidateTextPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        candidateTextPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
 
-        borderPaint.color = theme.candidateBarBg
-        borderPaint.style = Paint.Style.STROKE
-        borderPaint.strokeWidth = 2f
+        borderLinePaint.color = theme.keyBorderColor
+        borderLinePaint.style = Paint.Style.STROKE
+        borderLinePaint.strokeWidth = 1f * resources.displayMetrics.density
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val desiredHeight = (280 * resources.displayMetrics.density).toInt()
+        val desiredHeight = (230 * resources.displayMetrics.density).toInt()
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
-        val widthMode = MeasureSpec.getMode(widthMeasureSpec)
-
         val width = if (widthSize > 0) widthSize else resources.displayMetrics.widthPixels
 
         val heightSize = MeasureSpec.getSize(heightMeasureSpec)
@@ -283,12 +303,11 @@ class KeyboardView @JvmOverloads constructor(
     private fun buildLayouts(totalWidth: Int, totalHeight: Int) {
         keyRows.clear()
 
-        val candidateBarHeight = 44f * resources.displayMetrics.density
-        val availableHeight = totalHeight - candidateBarHeight
+        val availableHeight = totalHeight.toFloat()
         val rowCount = 4
         val rowHeight = availableHeight / rowCount
-        val keyMarginHorizontal = 3f * resources.displayMetrics.density
-        val keyMarginVertical = 3.5f * resources.displayMetrics.density
+        val keyMarginHorizontal = 3.5f * resources.displayMetrics.density
+        val keyMarginVertical = 4f * resources.displayMetrics.density
 
         val rawRows = when (keyboardMode) {
             KeyboardMode.LOWERCASE -> getQwertyRows(uppercase = false)
@@ -297,7 +316,7 @@ class KeyboardView @JvmOverloads constructor(
             KeyboardMode.SYMBOLS -> getSymbolRows()
         }
 
-        var currentY = candidateBarHeight
+        var currentY = 0f
 
         for (row in rawRows) {
             val totalRowWeight = row.sumOf { it.weight.toDouble() }.toFloat()
@@ -404,49 +423,10 @@ class KeyboardView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        // 1. Draw overall keyboard background
+        // 1. Draw overall keyboard canvas background
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
 
-        // 2. Draw top candidate & method bar
-        val candidateBarHeight = 44f * resources.displayMetrics.density
-        val candidateRect = RectF(0f, 0f, width.toFloat(), candidateBarHeight)
-        canvas.drawRect(candidateRect, candidateBgPaint)
-
-        // Draw active input method badge pill
-        val pillPaint = if (currentMethod == ViEngine.METHOD_TELEX) accentPaint else keySpecialBgPaint
-        val pillRect = RectF(12f, 8f, 130f, candidateBarHeight - 8f)
-        canvas.drawRoundRect(pillRect, 16f, 16f, pillPaint)
-
-        popupTextPaint.textSize = 13f * resources.displayMetrics.scaledDensity
-        val methodBadge = if (currentMethod == ViEngine.METHOD_TELEX) "⚡ TELEX" else "🔢 VNI"
-        canvas.drawText(methodBadge, pillRect.centerX(), pillRect.centerY() + 5f, popupTextPaint)
-
-        // Draw current composing buffer or hint
-        candidateTextPaint.textSize = 16f * resources.displayMetrics.scaledDensity
-        if (currentComposingText.isNotEmpty()) {
-            canvas.drawText(
-                "Đang gõ: \"$currentComposingText\"",
-                145f,
-                candidateBarHeight / 2f + 6f,
-                candidateTextPaint
-            )
-        } else {
-            keySpecialTextPaint.textSize = 13f * resources.displayMetrics.scaledDensity
-            keySpecialTextPaint.textAlign = Paint.Align.LEFT
-            val engineStatus = if (ViEngine.isNativeEngineAvailable()) "Engine Rust JNI" else "Engine Kotlin"
-            canvas.drawText(
-                "Chạm để nhập • $engineStatus",
-                145f,
-                candidateBarHeight / 2f + 5f,
-                keySpecialTextPaint
-            )
-            keySpecialTextPaint.textAlign = Paint.Align.CENTER
-        }
-
-        // Draw separator line under candidate bar
-        canvas.drawLine(0f, candidateBarHeight, width.toFloat(), candidateBarHeight, borderPaint)
-
-        // 3. Draw all keys in rows
+        // 2. Draw keys
         val cornerRadius = theme.keyCornerRadiusDp * resources.displayMetrics.density
 
         for (row in keyRows) {
@@ -460,30 +440,33 @@ class KeyboardView @JvmOverloads constructor(
                     else -> keyBgPaint
                 }
 
-                // Draw key background shadow / rounded rect
+                // Draw key background
                 canvas.drawRoundRect(key.rect, cornerRadius, cornerRadius, paintToUse)
 
-                // Highlight active Shift / Method keys
+                // Draw subtle key border stroke for sharpness
+                if (!isPressed) {
+                    canvas.drawRoundRect(key.rect, cornerRadius, cornerRadius, keyBorderPaint)
+                }
+
+                // Highlight active Shift / Enter / Special keys
                 if (key.type == KeyType.SHIFT && (keyboardMode == KeyboardMode.UPPERCASE || keyboardMode == KeyboardMode.CAPS_LOCK)) {
+                    canvas.drawRoundRect(key.rect, cornerRadius, cornerRadius, accentPaint)
+                } else if (key.type == KeyType.ENTER) {
                     canvas.drawRoundRect(key.rect, cornerRadius, cornerRadius, accentPaint)
                 }
 
-                // Draw label text
+                // Select text paint and text size
                 val textPaintToUse = when {
-                    key.type == KeyType.SHIFT && (keyboardMode == KeyboardMode.UPPERCASE || keyboardMode == KeyboardMode.CAPS_LOCK) -> popupTextPaint
-                    key.type == KeyType.ENTER || key.type == KeyType.METHOD_SWITCH -> popupTextPaint
+                    key.type == KeyType.SHIFT && (keyboardMode == KeyboardMode.UPPERCASE || keyboardMode == KeyboardMode.CAPS_LOCK) -> accentTextPaint
+                    key.type == KeyType.ENTER -> accentTextPaint
                     isSpecial -> keySpecialTextPaint
                     else -> keyTextPaint
                 }
 
                 textPaintToUse.textSize = when (key.type) {
-                    KeyType.SPACE -> 14f * resources.displayMetrics.scaledDensity
-                    KeyType.ENTER, KeyType.MODE_SWITCH, KeyType.METHOD_SWITCH -> 13f * resources.displayMetrics.scaledDensity
-                    else -> 18f * resources.displayMetrics.scaledDensity
-                }
-
-                if (key.type == KeyType.ENTER) {
-                    canvas.drawRoundRect(key.rect, cornerRadius, cornerRadius, accentPaint)
+                    KeyType.SPACE -> 13f * resources.displayMetrics.scaledDensity
+                    KeyType.ENTER, KeyType.MODE_SWITCH, KeyType.METHOD_SWITCH -> 12.5f * resources.displayMetrics.scaledDensity
+                    else -> 17.5f * resources.displayMetrics.scaledDensity
                 }
 
                 val centerY = key.rect.centerY() + (textPaintToUse.textSize / 3f)
@@ -491,19 +474,19 @@ class KeyboardView @JvmOverloads constructor(
             }
         }
 
-        // 4. Draw key tap preview popup bubble floating above pressed key
+        // 3. Key tap preview popup
         activePressedKey?.let { key ->
             if (key.type == KeyType.CHARACTER) {
-                val popupWidth = key.rect.width() * 1.3f
-                val popupHeight = key.rect.height() * 1.2f
+                val popupWidth = key.rect.width() * 1.25f
+                val popupHeight = key.rect.height() * 1.15f
                 val popupX = key.rect.centerX() - (popupWidth / 2f)
-                val popupY = key.rect.top - popupHeight - 8f
+                val popupY = key.rect.top - popupHeight - 6f
 
                 val popupRect = RectF(popupX, popupY, popupX + popupWidth, popupY + popupHeight)
-                canvas.drawRoundRect(popupRect, cornerRadius * 1.5f, cornerRadius * 1.5f, popupBgPaint)
+                canvas.drawRoundRect(popupRect, cornerRadius * 1.3f, cornerRadius * 1.3f, popupBgPaint)
 
-                popupTextPaint.textSize = 24f * resources.displayMetrics.scaledDensity
-                canvas.drawText(key.label, popupRect.centerX(), popupRect.centerY() + 10f, popupTextPaint)
+                popupTextPaint.textSize = 22f * resources.displayMetrics.scaledDensity
+                canvas.drawText(key.label, popupRect.centerX(), popupRect.centerY() + 8f, popupTextPaint)
             }
         }
     }
@@ -517,7 +500,6 @@ class KeyboardView @JvmOverloads constructor(
                 val touchedKey = findKeyAt(x, y)
                 if (touchedKey != null) {
                     activePressedKey = touchedKey
-                    pressedKeyRect = touchedKey.rect
                     triggerHaptic()
                     handleKeyPressDown(touchedKey)
                     invalidate()
@@ -588,9 +570,7 @@ class KeyboardView @JvmOverloads constructor(
             KeyType.SPACE -> listener?.onSpace()
             KeyType.ENTER -> listener?.onEnter()
 
-            KeyType.BACKSPACE -> {
-                // First stroke handled in DOWN, repeat stopped in UP
-            }
+            KeyType.BACKSPACE -> {}
 
             KeyType.SHIFT -> {
                 keyboardMode = when (keyboardMode) {
@@ -629,9 +609,9 @@ class KeyboardView @JvmOverloads constructor(
     private fun triggerHaptic() {
         if (!enableHapticFeedback) return
         try {
-            vibrator?.vibrate(VibrationEffect.createOneShot(15, VibrationEffect.DEFAULT_AMPLITUDE))
+            vibrator?.vibrate(VibrationEffect.createOneShot(12, VibrationEffect.DEFAULT_AMPLITUDE))
         } catch (e: Exception) {
-            // Haptic fallback for older API levels
+            // Haptic fallback
         }
     }
 }
