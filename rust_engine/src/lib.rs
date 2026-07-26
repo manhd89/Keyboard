@@ -1,4 +1,3 @@
-use vi::{transform_buffer, TELEX, VNI};
 use jni::objects::{JClass, JString};
 use jni::sys::{jint, jstring};
 use jni::JNIEnv;
@@ -16,8 +15,11 @@ pub extern "system" fn Java_com_example_viengines_ViEngine_transform(
     };
 
     let mut result = String::new();
-    let method_def = if method == 0 { &TELEX } else { &VNI };
-    transform_buffer(method_def, input_str.chars(), &mut result);
+    if method == 0 {
+        vi::telex::transform_buffer(input_str.chars(), &mut result);
+    } else {
+        vi::vni::transform_buffer(input_str.chars(), &mut result);
+    }
 
     let output = env.new_string(&result).expect("Couldn't create java string");
     output.into_raw()
