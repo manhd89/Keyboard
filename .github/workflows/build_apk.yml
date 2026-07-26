@@ -32,9 +32,16 @@ jobs:
         run: cargo install cargo-ndk
 
       - name: Set up Android NDK
-        uses: nsetup/setup-android-ndk@v1
-        with:
-          ndk-version: r26b
+        run: |
+          if [ -d "$ANDROID_NDK_LATEST_HOME" ]; then
+            echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> $GITHUB_ENV
+            echo "Using pre-installed NDK at $ANDROID_NDK_LATEST_HOME"
+          else
+            echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;26.1.10909125"
+            NDK_PATH=$(ls -d $ANDROID_HOME/ndk/* 2>/dev/null | tail -n 1)
+            echo "ANDROID_NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
+            echo "Installed NDK at $NDK_PATH"
+          fi
 
       - name: Build Rust vi_engine library for Android targets
         run: |
