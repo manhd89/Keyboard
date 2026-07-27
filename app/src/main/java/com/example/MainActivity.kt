@@ -5,18 +5,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -31,17 +24,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.ui.theme.MyApplicationTheme
-import com.example.viengines.ViEngine
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,203 +56,29 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainKeyboardApp(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Tổng quan, 1: Bàn phím Canvas, 2: Engine JNI
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope()
 
     var isImeEnabled by remember { mutableStateOf(false) }
     var isImeSelected by remember { mutableStateOf(false) }
 
-    // Check system IME activation status
-    LaunchedEffect(Unit) {
+    fun refreshStatus() {
         checkImeStatus(context) { enabled, selected ->
             isImeEnabled = enabled
             isImeSelected = selected
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // App Header / Navigation Bar
-        AppTopHeader(
-            selectedTab = selectedTab,
-            onTabSelected = { selectedTab = it }
-        )
-
-        // Main Tab Content Area
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1f)
-        ) {
-            when (selectedTab) {
-                0 -> ImeSetupScreen(
-                    isImeEnabled = isImeEnabled,
-                    isImeSelected = isImeSelected,
-                    onRefreshStatus = {
-                        checkImeStatus(context) { enabled, selected ->
-                            isImeEnabled = enabled
-                            isImeSelected = selected
-                        }
-                    }
-                )
-                1 -> CanvasKeyboardDemoScreen()
-                2 -> EngineDebuggerScreen()
-            }
-        }
+    // Initial check
+    LaunchedEffect(Unit) {
+        refreshStatus()
     }
-}
 
-@Composable
-fun AppTopHeader(
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit
-) {
-    val isNative = ViEngine.isNativeEngineAvailable()
-
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            // Top Row Title & Engine Badge
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "VN",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = "Bàn Phím Tiếng Việt",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        )
-                        Text(
-                            text = "Telex & VNI • Minimalist Keyboard Engine",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                    }
-                }
-
-                // Engine Badge Pill
-                Surface(
-                    color = if (isNative) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(20.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(7.dp)
-                                .clip(CircleShape)
-                                .background(if (isNative) Color(0xFF10B981) else Color(0xFF3B82F6))
-                        )
-                        Text(
-                            text = if (isNative) "JNI Rust Engine" else "Kotlin Engine",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        )
-                    }
-                }
-            }
-
-            // Apple / Linear Segmented Control Tabs
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
-                    .padding(3.dp)
-            ) {
-                val tabs = listOf("Tổng quan", "Bàn phím Canvas", "Bộ gõ Engine")
-                tabs.forEachIndexed { index, title ->
-                    val isSelected = selectedTab == index
-                    val bgColor by animateColorAsState(
-                        if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent,
-                        label = "tabBg"
-                    )
-                    val textColor by animateColorAsState(
-                        if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                        label = "tabText"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(7.dp))
-                            .background(bgColor)
-                            .clickable { onTabSelected(index) }
-                            .padding(vertical = 8.dp)
-                            .testTag("tab_$index"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = textColor
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ImeSetupScreen(
-    isImeEnabled: Boolean,
-    isImeSelected: Boolean,
-    onRefreshStatus: () -> Unit
-) {
-    val context = LocalContext.current
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    var testText by remember { mutableStateOf("") }
-
-    // Auto refresh status whenever user returns to this screen
+    // Auto refresh when returning from settings or switching apps
     DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                onRefreshStatus()
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                refreshStatus()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -271,93 +88,105 @@ fun ImeSetupScreen(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // Step 1: Enable Input Method
-        SetupStepCard(
-            stepNumber = "1",
-            title = "Bật Bàn phím trong Cài đặt",
-            description = "Cho phép 'Bàn Phím Tiếng Việt' làm dịch vụ nhập liệu hệ thống.",
-            isCompleted = isImeEnabled,
-            statusText = if (isImeEnabled) "Đã bật" else "Chưa kích hoạt",
-            buttonText = if (isImeEnabled) "Mở Cài đặt hệ thống" else "Kích hoạt ngay",
-            onAction = {
-                context.startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
-            }
-        )
-
-        // Step 2: Select Input Method
-        SetupStepCard(
-            stepNumber = "2",
-            title = "Chọn làm Bàn phím Mặc định",
-            description = "Đặt 'Bàn Phím Tiếng Việt' làm phương thức nhập liệu chính.",
-            isCompleted = isImeSelected,
-            statusText = if (isImeSelected) "Đã chọn làm mặc định" else "Chưa chọn làm mặc định",
-            buttonText = if (isImeSelected) "Thay đổi bàn phím" else "Chọn làm mặc định",
-            onAction = {
-                val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                imm.showInputMethodPicker()
-            }
-        )
-
-        // Manual Refresh Button
-        OutlinedButton(
-            onClick = onRefreshStatus,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-        ) {
-            Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Kiểm tra & Cập nhật trạng thái", style = MaterialTheme.typography.labelLarge)
-        }
-
-        // Live Typing Test Card
+        // Simple Top Header
         Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Outlined.EditNote,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
                     Text(
-                        text = "Thử nghiệm bàn phím hệ thống",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        text = "VN",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                 }
 
-                OutlinedTextField(
-                    value = testText,
-                    onValueChange = { testText = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Nhập nội dung thử...") },
-                    placeholder = { Text("Bấm vào đây để mở bàn phím gõ thử...") },
-                    shape = RoundedCornerShape(10.dp),
-                    trailingIcon = {
-                        if (testText.isNotEmpty()) {
-                            IconButton(onClick = { testText = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Xóa", modifier = Modifier.size(18.dp))
-                            }
+                Text(
+                    text = "Cài đặt Bàn Phím Tiếng Việt",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            }
+        }
+
+        // Main Settings Body
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Step 1 Card: Enable IME in System Settings
+            SetupStepCard(
+                stepNumber = "1",
+                title = "Bật Bàn phím trong Cài đặt",
+                description = "Bật dịch vụ 'Bàn Phím Tiếng Việt' trong Cài đặt hệ thống.",
+                isCompleted = isImeEnabled,
+                statusText = if (isImeEnabled) "Đã bật" else "Chưa kích hoạt",
+                buttonText = if (isImeEnabled) "Đã bật trong Cài đặt" else "Kích hoạt ngay",
+                onAction = {
+                    context.startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
+                    coroutineScope.launch {
+                        repeat(10) {
+                            delay(500)
+                            refreshStatus()
                         }
                     }
-                )
+                }
+            )
+
+            // Step 2 Card: Select IME as Default
+            SetupStepCard(
+                stepNumber = "2",
+                title = "Chọn làm Bàn phím Mặc định",
+                description = "Đặt 'Bàn Phím Tiếng Việt' làm phương thức gõ chính.",
+                isCompleted = isImeSelected,
+                statusText = if (isImeSelected) "Đã chọn làm mặc định" else "Chưa chọn làm mặc định",
+                buttonText = if (isImeSelected) "Đã chọn làm mặc định" else "Chọn làm mặc định",
+                onAction = {
+                    val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.showInputMethodPicker()
+                    coroutineScope.launch {
+                        repeat(10) {
+                            delay(500)
+                            refreshStatus()
+                        }
+                    }
+                }
+            )
+
+            // Manual Refresh Button
+            OutlinedButton(
+                onClick = { refreshStatus() },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+            ) {
+                Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Cập nhật trạng thái", style = MaterialTheme.typography.labelLarge)
             }
         }
     }
@@ -457,8 +286,8 @@ fun SetupStepCard(
                     onClick = onAction,
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isCompleted) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary,
-                        contentColor = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary
+                        containerColor = if (isCompleted) Color(0xFF10B981) else MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
                     ),
                     modifier = Modifier.padding(top = 4.dp)
                 ) {
@@ -469,414 +298,45 @@ fun SetupStepCard(
     }
 }
 
-@Composable
-fun CanvasKeyboardDemoScreen() {
-    var canvasTypedText by remember { mutableStateOf("Xin chào Việt Nam! ") }
-    var activeTheme by remember { mutableStateOf(KeyboardView.KeyboardTheme.DARK_SLATE) }
-    val clipboardManager = LocalClipboardManager.current
-    val context = LocalContext.current
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        // Output Preview Card
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Văn bản gõ từ Canvas View",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        IconButton(
-                            onClick = {
-                                if (canvasTypedText.isNotEmpty()) {
-                                    clipboardManager.setText(AnnotatedString(canvasTypedText))
-                                    Toast.makeText(context, "Đã chép vào bộ nhớ tạm", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        ) {
-                            Icon(Icons.Outlined.ContentCopy, contentDescription = "Sao chép", modifier = Modifier.size(18.dp))
-                        }
-
-                        IconButton(onClick = { canvasTypedText = "" }) {
-                            Icon(Icons.Outlined.DeleteOutline, contentDescription = "Xóa", modifier = Modifier.size(18.dp))
-                        }
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = if (canvasTypedText.isEmpty()) "Chạm phím Canvas phía dưới để gõ..." else canvasTypedText,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            color = if (canvasTypedText.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface
-                        )
-                    )
-                }
-
-                // Theme selector label
-                Text(
-                    text = "Giao diện Bàn phím:",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-
-                // Theme Selector Bar
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val themes = listOf(
-                        KeyboardView.KeyboardTheme.DARK_SLATE,
-                        KeyboardView.KeyboardTheme.APPLE_LIGHT,
-                        KeyboardView.KeyboardTheme.CHARCOAL_MONO,
-                        KeyboardView.KeyboardTheme.WARM_CANVAS
-                    )
-
-                    themes.forEach { theme ->
-                        val isSelected = activeTheme.name == theme.name
-                        Surface(
-                            onClick = { activeTheme = theme },
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color(theme.backgroundColor),
-                            border = BorderStroke(
-                                if (isSelected) 2.dp else 1.dp,
-                                if (isSelected) Color(theme.accentColor) else Color(theme.keyBorderColor)
-                            ),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(38.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = theme.name,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        color = Color(theme.textColor),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Live Canvas Keyboard View
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(230.dp)
-                .clip(RoundedCornerShape(12.dp)),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-        ) {
-            AndroidView(
-                factory = { ctx ->
-                    KeyboardView(ctx).apply {
-                        theme = activeTheme
-                        var composing = StringBuilder()
-
-                        listener = object : KeyboardView.OnKeyboardActionListener {
-                            override fun onKeyTyped(code: Int, label: String) {
-                                composing.append(label)
-                                val transformed = ViEngine.transformText(composing.toString(), currentMethod)
-                                currentComposingText = transformed
-                            }
-
-                            override fun onBackspace() {
-                                if (composing.isNotEmpty()) {
-                                    composing.deleteCharAt(composing.length - 1)
-                                    val transformed = ViEngine.transformText(composing.toString(), currentMethod)
-                                    currentComposingText = transformed
-                                } else if (canvasTypedText.isNotEmpty()) {
-                                    canvasTypedText = canvasTypedText.dropLast(1)
-                                }
-                            }
-
-                            override fun onSpace() {
-                                if (composing.isNotEmpty()) {
-                                    val transformed = ViEngine.transformText(composing.toString(), currentMethod)
-                                    canvasTypedText += "$transformed "
-                                    composing.clear()
-                                    currentComposingText = ""
-                                } else {
-                                    canvasTypedText += " "
-                                }
-                            }
-
-                            override fun onEnter() {
-                                if (composing.isNotEmpty()) {
-                                    val transformed = ViEngine.transformText(composing.toString(), currentMethod)
-                                    canvasTypedText += "$transformed\n"
-                                    composing.clear()
-                                    currentComposingText = ""
-                                } else {
-                                    canvasTypedText += "\n"
-                                }
-                            }
-
-                            override fun onMethodChanged(method: Int) {
-                                if (composing.isNotEmpty()) {
-                                    currentComposingText = ViEngine.transformText(composing.toString(), method)
-                                }
-                            }
-                        }
-                    }
-                },
-                update = { view ->
-                    view.theme = activeTheme
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-    }
-}
-
-@Composable
-fun EngineDebuggerScreen() {
-    var debugInput by remember { mutableStateOf("tie2ng vie6t2 gow3 telex hoa3c vni") }
-    val clipboardManager = LocalClipboardManager.current
-    val context = LocalContext.current
-
-    val telexResult = remember(debugInput) {
-        ViEngine.transformText(debugInput, ViEngine.METHOD_TELEX)
-    }
-
-    val vniResult = remember(debugInput) {
-        ViEngine.transformText(debugInput, ViEngine.METHOD_VNI)
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Engine Tester Box
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-        ) {
-            Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Bộ kiểm thử Engine (JNI / Kotlin)",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-
-                Text(
-                    text = "Nhập chuỗi ký tự gõ phím thô để kiểm tra kết quả biến đổi real-time:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                OutlinedTextField(
-                    value = debugInput,
-                    onValueChange = { debugInput = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Chuỗi phím thô (Input buffer)") },
-                    shape = RoundedCornerShape(10.dp)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    ResultBox(
-                        title = "TELEX Output",
-                        resultText = telexResult,
-                        badgeColor = MaterialTheme.colorScheme.primary,
-                        onCopy = {
-                            clipboardManager.setText(AnnotatedString(telexResult))
-                            Toast.makeText(context, "Đã chép TELEX", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    ResultBox(
-                        title = "VNI Output",
-                        resultText = vniResult,
-                        badgeColor = Color(0xFF2563EB),
-                        onCopy = {
-                            clipboardManager.setText(AnnotatedString(vniResult))
-                            Toast.makeText(context, "Đã chép VNI", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-
-        // Rules Cheat Sheet Card
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-        ) {
-            Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Bảng quy tắc Telex & VNI",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-
-                RuleRow(mode = "TELEX", rule = "s: sắc, f: huyền, r: hỏi, x: ngã, j: nặng, z: xóa dấu")
-                RuleRow(mode = "TELEX", rule = "aa: â, aw: ă, ee: ê, oo: ô, ow: ơ, uw/w: ư, dd: đ")
-                RuleRow(mode = "VNI", rule = "1: sắc, 2: huyền, 3: hỏi, 4: ngã, 5: nặng, 0: xóa dấu")
-                RuleRow(mode = "VNI", rule = "6: â/ê/ô, 7: ơ/ư, 8: ă, 9: đ")
-            }
-        }
-    }
-}
-
-@Composable
-fun ResultBox(
-    title: String,
-    resultText: String,
-    badgeColor: Color,
-    onCopy: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-        modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    color = badgeColor,
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text(
-                        text = title,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(color = Color.White, fontWeight = FontWeight.Bold)
-                    )
-                }
-
-                IconButton(
-                    onClick = onCopy,
-                    modifier = Modifier.size(22.dp)
-                ) {
-                    Icon(Icons.Outlined.ContentCopy, contentDescription = "Sao chép", modifier = Modifier.size(14.dp))
-                }
-            }
-
-            Text(
-                text = if (resultText.isEmpty()) "(Rỗng)" else resultText,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun RuleRow(mode: String, rule: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Surface(
-            color = if (mode == "TELEX") MaterialTheme.colorScheme.primary else Color(0xFF2563EB),
-            shape = RoundedCornerShape(4.dp)
-        ) {
-            Text(
-                text = mode,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                style = MaterialTheme.typography.labelSmall.copy(color = Color.White, fontWeight = FontWeight.Bold)
-            )
-        }
-
-        Text(
-            text = rule,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        )
-    }
-}
-
 private fun checkImeStatus(
     context: Context,
     onResult: (Boolean, Boolean) -> Unit
 ) {
     try {
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        val packageName = context.packageName
+        val pkgName = context.packageName // e.g. "com.aistudio.vietnamesekeyboard.vime"
 
-        // Check enabled IME
-        val enabledList = imm.enabledInputMethodList
-        var isEnabled = enabledList.any { it.packageName == packageName }
+        // 1. Enabled check
+        val enabledList = try { imm.enabledInputMethodList } catch (e: Exception) { emptyList() }
+        val enabledInList = enabledList.any { imi ->
+            imi.packageName == pkgName ||
+            imi.packageName == "com.example" ||
+            imi.serviceName.contains("VietnameseIME") ||
+            imi.id.contains("VietnameseIME") ||
+            imi.id.contains(pkgName)
+        }
 
-        val enabledMethodsSetting = Settings.Secure.getString(
+        val enabledSetting = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.ENABLED_INPUT_METHODS
         ) ?: ""
 
-        if (!isEnabled && (enabledMethodsSetting.contains(packageName) || enabledMethodsSetting.contains("VietnameseIME"))) {
-            isEnabled = true
-        }
-
-        // Check default selected IME
-        val defaultMethodSetting = Settings.Secure.getString(
+        // 2. Selected (Default) check
+        val defaultSetting = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.DEFAULT_INPUT_METHOD
         ) ?: ""
 
-        val isSelected = isEnabled && (
-            defaultMethodSetting.contains(packageName) ||
-            defaultMethodSetting.contains("VietnameseIME")
-        )
+        val isSelected = defaultSetting.contains(pkgName) ||
+            defaultSetting.contains("com.example") ||
+            defaultSetting.contains("VietnameseIME") ||
+            defaultSetting.contains("vime")
+
+        val isEnabled = isSelected || enabledInList ||
+            enabledSetting.contains(pkgName) ||
+            enabledSetting.contains("com.example") ||
+            enabledSetting.contains("VietnameseIME") ||
+            enabledSetting.contains("vime")
 
         onResult(isEnabled, isSelected)
     } catch (e: Exception) {

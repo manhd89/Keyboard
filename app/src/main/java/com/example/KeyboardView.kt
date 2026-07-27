@@ -371,57 +371,65 @@ class KeyboardView @JvmOverloads constructor(
         val methodLabel = if (currentMethod == ViEngine.METHOD_TELEX) "TELEX" else "VNI"
 
         val r4 = listOf(
-            Key(-3, "?123", KeyType.MODE_SWITCH, weight = 1.3f),
-            Key(-4, methodLabel, KeyType.METHOD_SWITCH, weight = 1.3f),
-            Key(32, "Tiếng Việt", KeyType.SPACE, weight = 4.0f),
-            Key(10, "Nhập ↵", KeyType.ENTER, weight = 1.5f)
+            Key(-3, "?123", KeyType.MODE_SWITCH, weight = 1.2f),
+            Key(-4, methodLabel, KeyType.METHOD_SWITCH, weight = 1.2f),
+            Key(','.code, ",", KeyType.CHARACTER, weight = 0.9f),
+            Key(32, "Tiếng Việt", KeyType.SPACE, weight = 3.2f),
+            Key('.'.code, ".", KeyType.CHARACTER, weight = 0.9f),
+            Key(10, "Nhập ↵", KeyType.ENTER, weight = 1.4f)
         )
 
         return listOf(r0, r1, r2, r3, r4)
     }
 
     private fun getNumberRows(): List<List<Key>> {
-        val r1 = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0").map { Key(it[0].code, it) }
-        val r2 = listOf("@", "#", "$", "_", "&", "-", "+", "(", ")", "/").map { Key(it[0].code, it) }
+        val r0 = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0").map { Key(it[0].code, it) }
+        val r1 = listOf("@", "#", "$", "_", "&", "-", "+", "(", ")", "/").map { Key(it[0].code, it) }
+        val r2 = listOf("*", "\"", "'", ":", ";", "!", "?", "\\", "%").map { Key(it[0].code, it) }
 
         val r3 = mutableListOf<Key>().apply {
             add(Key(-5, "=/<", KeyType.MODE_SWITCH, weight = 1.4f))
-            listOf("*", "\"", "'", ":", ";", "!", "?").forEach { add(Key(it[0].code, it)) }
+            listOf("<", ">", "[", "]", "{", "}", "~").forEach { add(Key(it[0].code, it)) }
             add(Key(-2, "⌫", KeyType.BACKSPACE, weight = 1.4f))
         }
 
         val methodLabel = if (currentMethod == ViEngine.METHOD_TELEX) "TELEX" else "VNI"
 
         val r4 = listOf(
-            Key(-6, "ABC", KeyType.MODE_SWITCH, weight = 1.3f),
-            Key(-4, methodLabel, KeyType.METHOD_SWITCH, weight = 1.3f),
-            Key(32, "Dấu cách", KeyType.SPACE, weight = 4.0f),
-            Key(10, "Hoàn tất", KeyType.ENTER, weight = 1.5f)
+            Key(-6, "ABC", KeyType.MODE_SWITCH, weight = 1.2f),
+            Key(-4, methodLabel, KeyType.METHOD_SWITCH, weight = 1.2f),
+            Key(','.code, ",", KeyType.CHARACTER, weight = 0.9f),
+            Key(32, "Dấu cách", KeyType.SPACE, weight = 3.2f),
+            Key('.'.code, ".", KeyType.CHARACTER, weight = 0.9f),
+            Key(10, "Hoàn tất", KeyType.ENTER, weight = 1.4f)
         )
 
-        return listOf(r1, r2, r3, r4)
+        return listOf(r0, r1, r2, r3, r4)
     }
 
     private fun getSymbolRows(): List<List<Key>> {
-        val r1 = listOf("~", "`", "|", "•", "√", "π", "÷", "×", "¶", "∆").map { Key(it[0].code, it) }
-        val r2 = listOf("£", "¥", "€", "¢", "^", "°", "=", "{", "}", "\\").map { Key(it[0].code, it) }
+        val r0 = listOf("^", "°", "=", "•", "\\", "|", "~", "`", "÷", "×").map { Key(it[0].code, it) }
+        val r1 = listOf("£", "¥", "€", "¢", "₹", "§", "¶", "∆", "√", "π").map { Key(it[0].code, it) }
+        val r2 = listOf("©", "®", "™", "✓", "[", "]", "{", "}", "¡", "¿").map { Key(it[0].code, it) }
 
         val r3 = mutableListOf<Key>().apply {
             add(Key(-3, "123", KeyType.MODE_SWITCH, weight = 1.4f))
-            listOf("%", "©", "®", "™", "✓", "[", "]").forEach { add(Key(it[0].code, it)) }
+            listOf("<", ">", "«", "»", "°", "±", "…").forEach { add(Key(it[0].code, it)) }
             add(Key(-2, "⌫", KeyType.BACKSPACE, weight = 1.4f))
         }
 
         val methodLabel = if (currentMethod == ViEngine.METHOD_TELEX) "TELEX" else "VNI"
 
         val r4 = listOf(
-            Key(-6, "ABC", KeyType.MODE_SWITCH, weight = 1.3f),
-            Key(-4, methodLabel, KeyType.METHOD_SWITCH, weight = 1.3f),
-            Key(32, "Dấu cách", KeyType.SPACE, weight = 4.0f),
-            Key(10, "Hoàn tất", KeyType.ENTER, weight = 1.5f)
+            Key(-6, "ABC", KeyType.MODE_SWITCH, weight = 1.2f),
+            Key(-4, methodLabel, KeyType.METHOD_SWITCH, weight = 1.2f),
+            Key(','.code, ",", KeyType.CHARACTER, weight = 0.9f),
+            Key(32, "Dấu cách", KeyType.SPACE, weight = 3.2f),
+            Key('.'.code, ".", KeyType.CHARACTER, weight = 0.9f),
+            Key(10, "Hoàn tất", KeyType.ENTER, weight = 1.4f)
         )
 
-        return listOf(r1, r2, r3, r4)
+        return listOf(r0, r1, r2, r3, r4)
     }
 
     override fun onDraw(canvas: Canvas) {
